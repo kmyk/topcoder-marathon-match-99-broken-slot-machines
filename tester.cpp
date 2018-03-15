@@ -29,14 +29,15 @@ public:
     int noteTime;
     int numMachines;
     vector<int> wheelSize;
-    default_random_engine gen;
+    mt19937_64 gen;
 
     int nextInt(int r) {
         return uniform_int_distribution<int>(0, r - 1)(gen);
     }
     PlaySlotsImpl() = default;
     PlaySlotsImpl(long seed) {
-        gen = default_random_engine(seed);
+        gen = mt19937_64(seed);
+        REP (iteration, 100) gen();  // shuffle
         coins = 100 + nextInt(9901);
         maxTime = 100 + nextInt(9901);
         noteTime = 2 + nextInt(9);
@@ -55,7 +56,6 @@ public:
                 REP (k, wheelSize[i]) {
                     wheels[i][j] += "AABBBBCCCCCDDDDDDEEEEEEFFFFFFFGGGGGGGG"[nextInt(38)];
                 }
-                wheels[i][j] += wheels[i][j] + wheels[i][j];  // to avoid modulo op
             }
         }
     }
@@ -74,7 +74,7 @@ public:
             ret[i + 1] = "";
             REP3 (j, -1, 1 + 1) {
                 REP (k, 3) {
-                    ret[i + 1] += wheels[machineNumber][k][res[k] + w + j];
+                    ret[i + 1] += wheels[machineNumber][k][(res[k] + w + j) % w];
                 }
             }
             if (ret[i + 1][3] != ret[i + 1][4] or ret[i + 1][3] != ret[i + 1][5]) {
@@ -141,8 +141,7 @@ int main(int argc, char **argv) {
         auto const & wheels = g_impl.wheels[i];
         int wheelSize = g_impl.wheelSize[i];
         REP (j, 3) {
-            string s = wheels[j].substr(0, wheelSize);
-            cout << "wheel " << j << ": " << s << endl;
+            cout << "wheel " << j << ": " << wheels[j] << endl;
         }
         int payout = 0;
         payout += count(ALL(wheels[0]), 'A') * count(ALL(wheels[1]), 'A') * count(ALL(wheels[2]), 'A') * 1000;
@@ -152,12 +151,13 @@ int main(int argc, char **argv) {
         payout += count(ALL(wheels[0]), 'E') * count(ALL(wheels[1]), 'E') * count(ALL(wheels[2]), 'E') * 20;
         payout += count(ALL(wheels[0]), 'F') * count(ALL(wheels[1]), 'F') * count(ALL(wheels[2]), 'F') * 10;
         payout += count(ALL(wheels[0]), 'G') * count(ALL(wheels[1]), 'G') * count(ALL(wheels[2]), 'G') * 5;
-        double expected = double(payout) / wheels[0].size() / wheels[1].size() / wheels[2].size();
+        double expected = payout / pow(wheelSize, 3);
         cout << "Expected payout rate: " << expected << endl;
         cout << endl;
     }
 
     BrokenSlotMachines().playSlots(coins, maxTime, noteTime, numMachines);
     cout << "Result: " << g_impl.coins << endl;
+    cout << "Delta: " << (g_impl.coins - coins) << endl;
     return 0;
 }
