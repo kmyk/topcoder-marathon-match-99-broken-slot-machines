@@ -23,12 +23,17 @@ public:
 };
 #endif
 
+const int payout_table[7] = { 1000, 200, 100, 50, 20, 10, 5 };
+
+struct stop : public runtime_error {
+    stop(string const & msg) : runtime_error(msg) {}
+};
 class Solver {
 public:
     int coins;
     int maxTime;
-    int noteTime;
-    int numMachines;
+    const int noteTime;
+    const int numMachines;
     Solver(int coins, int maxTime, int noteTime, int numMachines)
             : coins(coins)
             , maxTime(maxTime)
@@ -39,8 +44,8 @@ public:
     int quickPlay(int machineNumber, int times) {
         coins -= times;
         maxTime -= times;
-        assert (coins >= 0);
-        assert (maxTime >= 0);
+        if (coins < 0) throw stop("bankrupted");
+        if (maxTime < 0) throw stop("time up!");
         int win = PlaySlots::quickPlay(machineNumber, times);
         coins += win;
         return win;
@@ -48,8 +53,8 @@ public:
     pair<int, vector<string> > notePlay(int machineNumber, int times) {
         coins -= times;
         maxTime -= noteTime * times;
-        assert (coins >= 0);
-        assert (maxTime >= 0);
+        if (coins < 0) throw stop("bankrupted");
+        if (maxTime < 0) throw stop("time up");
         auto res = PlaySlots::notePlay(machineNumber, times);
         int win = stoi(res[0]);
         coins += win;
@@ -58,9 +63,41 @@ public:
         return make_pair(win, res);
     }
 
+    vector<array<array<int, 7>, 3> > freq;
+    vector<double> expected;
     void playSlots() {
-        while (coins and maxTime) {
-            quickPlay(0, 1);
+        { // explore
+            freq.resize(numMachines, array<array<int, 7>, 3>());
+            expected.resize(numMachines);
+            constexpr int depth = 10;
+            int k = min(numMachines, maxTime / 3 / noteTime / depth);
+            REP (i, k) {
+                auto result = notePlay(i, depth).second;
+                for (string s : result) {
+                    REP (j, 3 * 3) {
+                        freq[i][j % 3][s[j] - 'A'] += 1;
+                    }
+                }
+                int payout = 0;
+                REP (j, 7) {
+                    payout += freq[i][0][j] * freq[i][1][j] * freq[i][2][j] * payout_table[j];
+                }
+                expected[i] = payout / pow(3 * depth, 3);
+                cerr << "Expected payout rate: " << expected[i] << endl;
+            }
+            cerr << "Coins: " << coins << endl;
+            cerr << "Remainig Time: " << maxTime << endl;
+        }
+
+        { // exploit
+            int i = max_element(ALL(expected)) - expected.begin();
+            if (i == numMachines) i = 0;
+            cerr << "Selected Machine: " << i << endl;
+            while (coins and maxTime) {
+                quickPlay(i, min(coins, maxTime));
+                cerr << "Coins: " << coins << endl;
+                cerr << "Remainig Time: " << maxTime << endl;
+            }
         }
     }
 };
@@ -71,6 +108,10 @@ public:
     int playSlots(int coins, int maxTime, int noteTime, int numMachines);
 };
 int BrokenSlotMachines::playSlots(int coins, int maxTime, int noteTime, int numMachines) {
-    Solver(coins, maxTime, noteTime, numMachines).playSlots();
+    try {
+        Solver(coins, maxTime, noteTime, numMachines).playSlots();
+    } catch (stop e) {
+        cerr << e.what() << endl;
+    }
     return 0;
 }
