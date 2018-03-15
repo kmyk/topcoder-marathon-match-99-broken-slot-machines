@@ -63,13 +63,26 @@ public:
         return make_pair(win, res);
     }
 
+    double calc_expected(array<array<int, 7>, 3> const & freq) {
+        int size[3] = {
+            accumulate(ALL(freq[0]), 0),
+            accumulate(ALL(freq[1]), 0),
+            accumulate(ALL(freq[2]), 0),
+        };
+        int payout = 0;
+        REP (j, 7) {
+            payout += freq[0][j] * freq[1][j] * freq[2][j] * payout_table[j];
+        }
+        return payout /(double) (size[0] * size[1] * size[2]);
+    }
+
     vector<array<array<int, 7>, 3> > freq;
     vector<double> expected;
     void playSlots() {
         { // explore
             freq.resize(numMachines, array<array<int, 7>, 3>());
             expected.resize(numMachines);
-            constexpr int depth = 10;
+            constexpr int depth = 30;
             int k = min(numMachines, maxTime / 3 / noteTime / depth);
             REP (i, k) {
                 auto result = notePlay(i, depth).second;
@@ -78,11 +91,7 @@ public:
                         freq[i][j % 3][s[j] - 'A'] += 1;
                     }
                 }
-                int payout = 0;
-                REP (j, 7) {
-                    payout += freq[i][0][j] * freq[i][1][j] * freq[i][2][j] * payout_table[j];
-                }
-                expected[i] = payout / pow(3 * depth, 3);
+                expected[i] = calc_expected(freq[i]);
                 cerr << "Expected payout rate: " << expected[i] << endl;
             }
             cerr << "Coins: " << coins << endl;
@@ -91,7 +100,9 @@ public:
 
         { // exploit
             int i = max_element(ALL(expected)) - expected.begin();
-            if (i == numMachines) i = 0;
+            if (i == numMachines or expected[i] < 1.1) {
+                return;
+            }
             cerr << "Selected Machine: " << i << endl;
             while (coins and maxTime) {
                 quickPlay(i, min(coins, maxTime));
