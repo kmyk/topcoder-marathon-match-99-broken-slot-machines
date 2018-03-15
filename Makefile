@@ -6,3 +6,7 @@ a.out: answer.cpp tester.cpp
 build: a.out
 run: a.out
 	./a.out -seed ${SEED}
+
+score: a.out
+	echo 'seed,result'
+	for seed in $$(seq 300) ; do echo $$seed,$$(./a.out -seed $$seed | tee /dev/stderr | grep Result: | cut -d ' ' -f 2) ; done

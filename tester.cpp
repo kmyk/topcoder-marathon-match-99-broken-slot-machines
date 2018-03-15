@@ -120,9 +120,18 @@ vector<string> PlaySlots::notePlay(int machineNumber, int times) {
 }
 
 int main(int argc, char **argv) {
-    assert (argc == 3);
-    assert (argv[1] == string("-seed"));
-    int seed = stoi(argv[2]);
+    int seed = -1;
+    bool get_json = false;
+    REP3 (i, 1, argc) {
+        if (argv[i] == string("-seed")) {
+            seed = stoi(argv[++ i]);
+        } else if (argv[i] == string("-json")) {
+            get_json = true;
+        } else {
+            assert (false);
+        }
+    }
+    assert (seed != -1);
     cout << "Seed = " << seed << endl;
     cout << endl;
 
@@ -136,6 +145,7 @@ int main(int argc, char **argv) {
     cout << "Note Time: " << noteTime << endl;
     cout << "Num Machines: " << numMachines << endl;
     cout << endl;
+    vector<double> expected(numMachines);
     REP (i, numMachines) {
         cout << "Machine " << i << "..."  << endl;
         auto const & wheels = g_impl.wheels[i];
@@ -151,13 +161,38 @@ int main(int argc, char **argv) {
         payout += count(ALL(wheels[0]), 'E') * count(ALL(wheels[1]), 'E') * count(ALL(wheels[2]), 'E') * 20;
         payout += count(ALL(wheels[0]), 'F') * count(ALL(wheels[1]), 'F') * count(ALL(wheels[2]), 'F') * 10;
         payout += count(ALL(wheels[0]), 'G') * count(ALL(wheels[1]), 'G') * count(ALL(wheels[2]), 'G') * 5;
-        double expected = payout / pow(wheelSize, 3);
-        cout << "Expected payout rate: " << expected << endl;
+        expected[i] = payout / pow(wheelSize, 3);
+        cout << "Expected payout rate: " << expected[i] << endl;
         cout << endl;
     }
 
     BrokenSlotMachines().playSlots(coins, maxTime, noteTime, numMachines);
     cout << "Result: " << g_impl.coins << endl;
     cout << "Delta: " << (g_impl.coins - coins) << endl;
+
+    if (get_json) {
+        cout << "{";
+        cout << "\"seed\":" << seed << ",";
+        cout << "\"coins\":" << coins << ",";
+        cout << "\"maxTime\":" << maxTime << ",";
+        cout << "\"noteTime\":" << noteTime << ",";
+        cout << "\"numMachines\":" << numMachines << ",";
+        cout << "\"machines\":[";
+        REP (i, numMachines) {
+            if (i) cout << ",";
+            cout << "{";
+            cout << "\"expected\":" << expected[i] << ",";
+            cout << "\"wheelSize\":" << g_impl.wheelSize[i] << ",";
+            cout << "\"wheels\":[";
+            REP (j, 3) {
+                if (j) cout << ",";
+                cout << "\"" << g_impl.wheels[i][j] << "\"";
+            }
+            cout << "]";
+            cout << "}";
+        }
+        cout << "],";
+        cout << "\"result\":" << g_impl.coins << "}" << endl;
+    }
     return 0;
 }
