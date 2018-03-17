@@ -4,6 +4,7 @@ from colorama import Fore, Back, Style
 import json
 import subprocess
 import sys
+import matplotlib.pyplot as plt
 
 def command_get(args):
     data = []
@@ -20,9 +21,21 @@ def command_diff(args):
     with open(args.b) as fh:
         b = json.load(fh)
     assert len(a) == len(b)
+    indices = list(range(len(a)))
+    indices.sort(key=lambda i: a[i][args.key])
     score_a = 0
     score_b = 0
-    for i in range(len(a)):
+    width = 12
+    print(''.join([
+        'seed'.rjust(width),
+        'a'.rjust(width),
+        'b'.rjust(width),
+        'coins'.rjust(width),
+        'maxTime'.rjust(width),
+        'noteTime'.rjust(width),
+        'numMachines'.rjust(width),
+    ]))
+    for i in indices:
         assert a[i]['seed'] == b[i]['seed']
         seed = a[i]['seed']
         coins = a[i]['coins']
@@ -43,16 +56,21 @@ def command_diff(args):
             style_a = ''
             style_b = ''
         s = ''.join([
-            str(seed).rjust(6),
-            style_a, str(val_a).rjust(6), Style.RESET_ALL,
-            style_b, str(val_b).rjust(6), Style.RESET_ALL,
-            str(coins).rjust(6),
-            str(maxTime).rjust(6),
-            str(noteTime).rjust(6),
-            str(numMachines).rjust(6),
+            str(seed).rjust(width),
+            style_a, str(val_a).rjust(width), Style.RESET_ALL,
+            style_b, str(val_b).rjust(width), Style.RESET_ALL,
+            str(coins).rjust(width),
+            str(maxTime).rjust(width),
+            str(noteTime).rjust(width),
+            str(numMachines).rjust(width),
         ])
         print(s)
+        if args.plot:
+            plt.plot(a[i][args.key], val_a, 'ro')
+            plt.plot(b[i][args.key], val_b, 'bo')
     print(score_a, score_b)
+    if args.plot:
+        plt.show()
 
 def main():
     import argparse
@@ -63,6 +81,8 @@ def main():
     parser_diff = subparsers.add_parser('diff')
     parser_diff.add_argument('a')
     parser_diff.add_argument('b')
+    parser_diff.add_argument('--key', default='seed')
+    parser_diff.add_argument('--plot', action='store_true')
     args = parser.parse_args()
 
     if args.command == 'get':
