@@ -151,6 +151,7 @@ public class Tester {
 	}
  
 	public void runTest(long seed) {
+		Thread thread = null;
 		if (exec != null) {
 			try {
 				Runtime rt = Runtime.getRuntime();
@@ -158,6 +159,8 @@ public class Tester {
 				os = proc.getOutputStream();
 				is = proc.getInputStream();
 				br = new BufferedReader(new InputStreamReader(is));
+				thread = new ErrorReader(proc.getErrorStream());
+				thread.start();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -207,7 +210,7 @@ public class Tester {
 					int times = Integer.parseInt(br.readLine());
 					String[] result = notePlay(no, times);
 					for (int i = 0; i < result.length; i++) {
-						sb.append(result).append('\n');
+						sb.append(result[i]).append('\n');
 					}
 				} else {
 					break;
@@ -269,4 +272,22 @@ public class Tester {
 	static String exec;
 	static boolean debug = false;
  
+}
+ 
+class ErrorReader extends Thread{
+	InputStream error;
+	public ErrorReader(InputStream is) {
+		error = is;
+	}
+	public void run() {
+		try {
+			byte[] ch = new byte[50000];
+			int read;
+			while ((read = error.read(ch)) > 0)
+			{   String s = new String(ch,0,read);
+				System.out.print(s);
+				System.out.flush();
+			}
+		} catch(Exception e) { }
+	}
 }
