@@ -68,7 +68,8 @@ def command_diff(args):
         if args.plot:
             plt.plot(a[i][args.key], val_a, 'ro')
             plt.plot(b[i][args.key], val_b, 'bo')
-    print(score_a, score_b)
+    scale = 100 / len(indices)
+    print(score_a * scale, score_b * scale)
     if args.plot:
         plt.show()
 
