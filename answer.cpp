@@ -79,19 +79,37 @@ public:
     vector<array<array<int, 7>, 3> > freq;
     vector<double> expected;
     void playSlots() {
-        { // explore
-            freq.resize(numMachines, array<array<int, 7>, 3>());
-            expected.resize(numMachines);
-            constexpr int depth = 30;
-            int k = min(numMachines, maxTime / 3 / noteTime / depth);
-            REP (i, k) {
-                auto result = notePlay(i, depth).second;
-                for (string s : result) {
-                    REP (j, 3 * 3) {
-                        freq[i][j % 3][s[j] - 'A'] += 1;
-                    }
+        freq.resize(numMachines, array<array<int, 7>, 3>());
+        expected.resize(numMachines, - INFINITY);
+        auto inspect = [&](int i, int depth) {
+            auto result = notePlay(i, depth).second;
+            for (string s : result) {
+                REP (j, 3 * 3) {
+                    freq[i][j % 3][s[j] - 'A'] += 1;
                 }
-                expected[i] = calc_expected(freq[i]);
+            }
+            expected[i] = calc_expected(freq[i]);
+        };
+
+        { // explore
+            constexpr int first_depth = 10;
+            constexpr int second_depth = 50;
+            const int first_k = min(numMachines, maxTime / noteTime / first_depth);
+            const int second_k = min(3, first_k);
+            if (maxTime - (first_k * first_depth + second_k + second_depth) * noteTime <= 1000) {
+                return;
+            }
+            REP (i, first_k) {
+                inspect(i, first_depth);
+            }
+            vector<int> indices(numMachines);
+            iota(ALL(indices), 0);
+            sort(ALL(indices), [&](int i, int j) { return expected[i] > expected[j]; });
+            REP (j, second_k) {
+                int i = indices[j];
+                inspect(i, second_depth);
+            }
+            REP (i, numMachines) {
                 cerr << "Expected payout rate: " << expected[i] << endl;
             }
             cerr << "Coins: " << coins << endl;
