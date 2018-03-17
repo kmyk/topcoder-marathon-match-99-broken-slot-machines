@@ -2,10 +2,12 @@
 #include <array>
 #include <cassert>
 #include <iostream>
+#include <memory>
 #include <random>
 #include <string>
 #include <vector>
 #include <boost/process.hpp>
+#include <jsoncpp/json/json.h>
 #define REP(i, n) for (int i = 0; (i) < int(n); ++ (i))
 #define REP3(i, m, n) for (int i = (m); (i) < int(n); ++ (i))
 #define ALL(x) begin(x), end(x)
@@ -181,28 +183,28 @@ int main(int argc, char **argv) {
     cout << "Delta: " << (a.coins - coins) << endl;
 
     if (get_json) {
-        cout << "{";
-        cout << "\"seed\":" << seed << ",";
-        cout << "\"coins\":" << coins << ",";
-        cout << "\"maxTime\":" << maxTime << ",";
-        cout << "\"noteTime\":" << noteTime << ",";
-        cout << "\"numMachines\":" << numMachines << ",";
-        cout << "\"machines\":[";
+        Json::Value root;
+        root["seed"] = seed;
+        root["coins"] = coins;
+        root["maxTime"] = maxTime;
+        root["noteTime"] = noteTime;
+        root["numMachines"] = numMachines;
+        root["machines"] = Json::Value(Json::arrayValue);
         REP (i, numMachines) {
-            if (i) cout << ",";
-            cout << "{";
-            cout << "\"expected\":" << expected[i] << ",";
-            cout << "\"wheelSize\":" << a.wheelSize[i] << ",";
-            cout << "\"wheels\":[";
+            root["machines"][i]["expected"] = expected[i];
+            root["machines"][i]["wheelSize"] = a.wheelSize[i];
+            root["machines"][i]["wheels"] = Json::Value(Json::arrayValue);
             REP (j, 3) {
-                if (j) cout << ",";
-                cout << "\"" << a.wheels[i][j] << "\"";
+                root["machines"][i]["wheels"][j] = a.wheels[i][j];
             }
-            cout << "]";
-            cout << "}";
         }
-        cout << "],";
-        cout << "\"result\":" << a.coins << "}" << endl;
+        root["result"] = a.coins;
+        // write
+        Json::StreamWriterBuilder builder;
+        builder.settings_["indentation"] = "";
+        unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
+        writer->write(root, &cout);
+        cout << endl;
     }
     return 0;
 }

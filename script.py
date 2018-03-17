@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 def command_get(args):
     data = []
     for seed in range(1, args.n + 1):
-        proc = subprocess.run([ 'sh', '-c', 'cd tester ; java Tester -exec ../a.out -json -seed ' + str(seed) ], stdout=subprocess.PIPE)
+        proc = subprocess.run([ './Tester', '-json', '-seed', str(seed) ], stdout=subprocess.PIPE)
         print(proc.stdout.decode(), file=sys.stderr)
         lines = proc.stdout.splitlines()
         data += [ json.loads(lines[-1].decode()) ]
