@@ -18,8 +18,27 @@ template <typename T> ostream & operator << (ostream & out, vector<T> const & xs
 #ifdef LOCAL
 class PlaySlots {
 public:
-    static int quickPlay(int machineNumber, int times);
-    static vector<string> notePlay(int machineNumber, int times);
+    static int quickPlay(int machineNumber, int times) {
+        cout << "quick" << endl;
+        cout << machineNumber << endl;
+        cout << times << endl;
+        cout.flush();
+        int ret; cin >> ret;
+        assert (cin);
+        return ret;
+    }
+    static vector<string> notePlay(int machineNumber, int times) {
+        cout << "note" << endl;
+        cout << machineNumber << endl;
+        cout << times << endl;
+        cout.flush();
+        vector<string> ret(times + 1);
+        REP (i, times + 1) {
+            cin >> ret[i];
+        }
+        assert (cin);
+        return ret;
+    }
 };
 #endif
 
@@ -144,3 +163,16 @@ int BrokenSlotMachines::playSlots(int coins, int maxTime, int noteTime, int numM
     }
     return 0;
 }
+
+#ifdef LOCAL
+int main() {
+    int coins; cin >> coins;
+    int maxTime; cin >> maxTime;
+    int noteTime; cin >> noteTime;
+    int numMachines; cin >> numMachines;
+    int ret = BrokenSlotMachines().playSlots(coins, maxTime, noteTime, numMachines);
+    cout << ret << endl;
+    cout.flush();
+    return 0;
+}
+#endif
