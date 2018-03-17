@@ -1,6 +1,8 @@
 .PHONY: build run
 
-a.out: answer.cpp
+PROBLEM := BrokenSlotMachines
+
+a.out: ${PROBLEM}.cpp
 	g++ -std=c++11 -Wall -O2 -DLOCAL $^
 tester/Tester.class: tester/Tester.java
 	cd tester ; javac Tester.java
