@@ -178,6 +178,7 @@ public class Tester {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+		if (json) printJson(seed);
 	}
  
 	void playSlots(int coins, int maxTime, int noteTime, int num) {
@@ -233,6 +234,8 @@ public class Tester {
 				exec = args[++i];
 			if (args[i].equals("-debug"))
 				debug = true;
+			if (args[i].equals("-json"))
+				json = true;
 		}
 		Tester tester = new Tester();
 		tester.runTest(Long.parseLong(seed));
@@ -271,6 +274,37 @@ public class Tester {
 	BufferedReader br;
 	static String exec;
 	static boolean debug = false;
+	static boolean json = false;
+ 
+	public void printJson(long seed) {
+		System.out.print("{");
+		System.out.print("\"seed\":" + seed + ",");
+		System.out.print("\"result\":" + coins + ",");
+		System.out.print("\"resultTime\":" + maxTime + ",");
+		generateTestCase(seed);
+		calculateExpected();
+		System.out.print("\"coins\":" + coins + ",");
+		System.out.print("\"maxTime\":" + maxTime + ",");
+		System.out.print("\"noteTime\":" + noteTime + ",");
+		System.out.print("\"numMachines\":" + no + ",");
+		System.out.print("\"machines\":[");
+		for (int i = 0; i < no; i++) {
+			if (i != 0) System.out.print(",");
+			System.out.print("{");
+			System.out.print("\"expected\":" + expected[i] + ",");
+			System.out.print("\"wheelSize\":" + wheelSize[i] + ",");
+			System.out.print("\"wheels\":[");
+			for (int j = 0; j < 3; j++) {
+				if (j != 0) System.out.print(",");
+				System.out.print("\"" + wheels[i][j] + "\"");
+			}
+			System.out.print("]");
+			System.out.print("}");
+		}
+		System.out.print("]");
+		System.out.print("}");
+		System.out.println("");
+	}
  
 }
  
@@ -285,8 +319,8 @@ class ErrorReader extends Thread{
 			int read;
 			while ((read = error.read(ch)) > 0)
 			{   String s = new String(ch,0,read);
-				System.out.print(s);
-				System.out.flush();
+				System.err.print(s);
+				System.err.flush();
 			}
 		} catch(Exception e) { }
 	}
