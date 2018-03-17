@@ -30,7 +30,7 @@ def command_diff(args):
         noteTime = a[i]['noteTime']
         numMachines = a[i]['numMachines']
         val_a = a[i]['result']
-        val_b = a[i]['result']
+        val_b = b[i]['result']
         score_a += val_a / max(1, val_a, val_b)
         score_b += val_b / max(1, val_a, val_b)
         if val_a > val_b:
