@@ -140,13 +140,6 @@ public:
         cerr << "Coins: " << coins << endl;
         cerr << "Remainig Time: " << maxTime << endl;
 
-        vector<int> quick_earned(numMachines);
-        vector<int> quick_count(numMachines);
-        auto modified_expected = [&](int i) {
-            int k = pow(3 * note_count[i], 3);
-            return (quick_earned[i] + expected[i] * k) / (quick_count[i] + k);
-        };
-
         cerr << "Exploit..." << endl;
         { // exploit
             int i = max_element(ALL(expected)) - expected.begin();
@@ -157,16 +150,7 @@ public:
             vector<int> indices(numMachines);
             iota(ALL(indices), 0);
             while (coins and maxTime) {
-                int j = *max_element(ALL(indices), [&](int i, int j) { return modified_expected(i) < modified_expected(j); });
-                if (j != i) {
-                    cerr << "Selected Machine: " << j << endl;
-                    i = j;
-                }
-                quick_earned[i] += quickPlay(i, 1);
-                quick_count[i] += 1;
-            }
-            REP (i, numMachines) {
-                cerr << "Modified Expected payout rate: " << modified_expected(i) << endl;
+                quickPlay(i, min(coins, maxTime));
             }
         }
 
