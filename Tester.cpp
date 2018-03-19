@@ -153,6 +153,13 @@ int main(int argc, char **argv) {
         cout << "Expected payout rate: " << expected[i] << endl;
         cout << endl;
     }
+    PlaySlots forked = a;
+    int bestMachine = max_element(ALL(expected)) - expected.begin();
+    while (forked.coins and forked.maxTime) {
+        forked.quickPlay(bestMachine, min(forked.coins, forked.maxTime));
+    }
+    double theoretical = max(coins, forked.coins);
+    cout << "Theoretical Value: " << theoretical << endl;
 
     bp::opstream in;
     bp::ipstream out;
@@ -199,6 +206,7 @@ int main(int argc, char **argv) {
             }
         }
         root["result"] = a.coins;
+        root["theoretical"] = theoretical;
         // write
         Json::StreamWriterBuilder builder;
         builder.settings_["indentation"] = "";
