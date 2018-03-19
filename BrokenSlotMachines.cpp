@@ -170,99 +170,31 @@ next: ;
     }
 
     void playSlots() {
-        if (noteTime >= 6) {
-            cerr << "Coins: " << coins << endl;
-            cerr << "Remainig Time: " << maxTime << endl;
-
-            auto modified_expected = [&](int i) {
-                int k = 20000;
-                return (quick_earned[i] + note_expected[i] * k) / (quick_count[i] + k);
-            };
-
-            REP (i, numMachines) {
-                cerr << "Machine " << i << "..." << endl;
-                cerr << "Explore..." << endl;
-                notePlay(i, 50 / noteTime);
-                cerr << "Expected payout rate: " << note_expected[i] << endl;
-                if (note_expected[i] < 1.0) continue;
-                notePlay(i, 50 / noteTime);
-                if (note_expected[i] < 1.3) continue;
-                notePlay(i, 50 / noteTime);
-                cerr << "Expected payout rate: " << note_expected[i] << endl;
-                cerr << "Exploit..." << endl;
-                while (coins and maxTime and modified_expected(i) > 1.3) {
-                    quickPlay(i, 1);
-                }
-                cerr << "Coins: " << coins << endl;
-                cerr << "Remainig Time: " << maxTime << endl;
-            }
-            return;
-        }
-
-        cerr << "Coins: " << coins << endl;
-        cerr << "Remainig Time: " << maxTime << endl;
-
-        cerr << "Explore..." << endl;
-        { // explore
-            constexpr int first_depth = 10;
-            constexpr int second_depth = 5;
-            const int first_k = min(numMachines, maxTime / noteTime / first_depth);
-            const int second_k = min(3, first_k);
-            if (maxTime - first_k * first_depth * noteTime <= 100) {
-                return;
-            }
-            REP (i, first_k) {
-                notePlay(i, first_depth);
-            }
-            vector<int> indices(numMachines);
-            iota(ALL(indices), 0);
-            sort(ALL(indices), [&](int i, int j) { return note_expected[i] > note_expected[j]; });
-            REP (j, second_k) {
-                int i = indices[j];
-                notePlay(i, second_depth);
-            }
-            REP (i, numMachines) {
-                cerr << "Expected payout rate: " << note_expected[i] << endl;
-            }
-        }
-
         cerr << "Coins: " << coins << endl;
         cerr << "Remainig Time: " << maxTime << endl;
 
         auto modified_expected = [&](int i) {
-            int k = pow(3 * note_count[i], 3);
+            int k = 2000;
             return (quick_earned[i] + note_expected[i] * k) / (quick_count[i] + k);
         };
 
-        cerr << "Exploit..." << endl;
-        { // exploit
-            int i = max_element(ALL(note_expected)) - note_expected.begin();
-            if (i == numMachines or note_expected[i] < 1.1) {
-                return;
-            }
-            cerr << "Selected Machine: " << i << endl;
-            vector<int> indices(numMachines);
-            iota(ALL(indices), 0);
-#ifdef LOCAL
-            while (coins and maxTime) {
-                quickPlay(i, min(coins, maxTime));  // for speed
-            }
-#endif
-            while (coins and maxTime) {
-                int j = *max_element(ALL(indices), [&](int i, int j) { return modified_expected(i) < modified_expected(j); });
-                if (j != i) {
-                    cerr << "Selected Machine: " << j << endl;
-                    i = j;
-                }
+        REP (i, numMachines) {
+            cerr << "Machine " << i << "..." << endl;
+            cerr << "Explore..." << endl;
+            notePlay(i, 80 / noteTime);
+            cerr << "Expected payout rate: " << note_expected[i] << endl;
+            if (note_expected[i] < 1.0) continue;
+            notePlay(i, 80 / noteTime);
+            if (note_expected[i] < 1.3) continue;
+            notePlay(i, 80 / noteTime);
+            cerr << "Expected payout rate: " << note_expected[i] << endl;
+            cerr << "Exploit..." << endl;
+            while (coins and maxTime and modified_expected(i) > 1.3) {
                 quickPlay(i, 1);
             }
-            REP (i, numMachines) {
-                cerr << "Modified Expected payout rate: " << modified_expected(i) << endl;
-            }
+            cerr << "Coins: " << coins << endl;
+            cerr << "Remainig Time: " << maxTime << endl;
         }
-
-        cerr << "Coins: " << coins << endl;
-        cerr << "Remainig Time: " << maxTime << endl;
     }
 };
 
