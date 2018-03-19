@@ -58,8 +58,15 @@ public:
             , maxTime(maxTime)
             , noteTime(noteTime)
             , numMachines(numMachines) {
+        quick_earned.resize(numMachines);
+        quick_count.resize(numMachines);
+        note_result.resize(numMachines);
+        note_count.resize(numMachines);
+        note_expected.resize(numMachines, - INFINITY);
     }
 
+    vector<int> quick_earned;
+    vector<int> quick_count;
     int quickPlay(int machineNumber, int times) {
         coins -= times;
         maxTime -= times;
@@ -67,8 +74,14 @@ public:
         if (maxTime < 0) throw stop("time up!");
         int win = PlaySlots::quickPlay(machineNumber, times);
         coins += win;
+        quick_earned[machineNumber] += win;
+        quick_count[machineNumber] += times;
         return win;
     }
+
+    vector<vector<string> > note_result;
+    vector<int> note_count;
+    vector<double> note_expected;
     pair<int, vector<string> > notePlay(int machineNumber, int times) {
         coins -= times;
         maxTime -= noteTime * times;
@@ -76,12 +89,23 @@ public:
         if (maxTime < 0) throw stop("time up");
         auto res = PlaySlots::notePlay(machineNumber, times);
         int win = stoi(res[0]);
+        res.erase(res.begin());
         coins += win;
-        res[0] = res.back();
-        res.pop_back();
+        copy(ALL(res), back_inserter(note_result[machineNumber]));
+        note_count[machineNumber] += times;
+        note_expected[machineNumber] = calc_expected(get_freq(note_result[machineNumber]));
         return make_pair(win, res);
     }
 
+    array<array<int, 7>, 3> get_freq(vector<string> const & result) {
+        array<array<int, 7>, 3> freq = {};
+        for (string s : result) {
+            REP (j, 3 * 3) {
+                freq[j % 3][s[j] - 'A'] += 1;
+            }
+        }
+        return freq;
+    }
     double calc_expected(array<array<int, 7>, 3> const & freq) {
         int size[3] = {
             accumulate(ALL(freq[0]), 0),
@@ -96,20 +120,6 @@ public:
     }
 
     void playSlots() {
-        vector<array<array<int, 7>, 3> > freq(numMachines, array<array<int, 7>, 3>());
-        vector<int> note_count(numMachines);
-        vector<double> expected(numMachines, - INFINITY);
-        auto inspect = [&](int i, int times) {
-            auto result = notePlay(i, times).second;
-            for (string s : result) {
-                REP (j, 3 * 3) {
-                    freq[i][j % 3][s[j] - 'A'] += 1;
-                }
-            }
-            note_count[i] += times;
-            expected[i] = calc_expected(freq[i]);
-        };
-
         cerr << "Coins: " << coins << endl;
         cerr << "Remainig Time: " << maxTime << endl;
 
@@ -123,34 +133,32 @@ public:
                 return;
             }
             REP (i, first_k) {
-                inspect(i, first_depth);
+                notePlay(i, first_depth);
             }
             vector<int> indices(numMachines);
             iota(ALL(indices), 0);
-            sort(ALL(indices), [&](int i, int j) { return expected[i] > expected[j]; });
+            sort(ALL(indices), [&](int i, int j) { return note_expected[i] > note_expected[j]; });
             REP (j, second_k) {
                 int i = indices[j];
-                inspect(i, second_depth);
+                notePlay(i, second_depth);
             }
             REP (i, numMachines) {
-                cerr << "Expected payout rate: " << expected[i] << endl;
+                cerr << "Expected payout rate: " << note_expected[i] << endl;
             }
         }
 
         cerr << "Coins: " << coins << endl;
         cerr << "Remainig Time: " << maxTime << endl;
 
-        vector<int> quick_earned(numMachines);
-        vector<int> quick_count(numMachines);
         auto modified_expected = [&](int i) {
             int k = pow(3 * note_count[i], 3);
-            return (quick_earned[i] + expected[i] * k) / (quick_count[i] + k);
+            return (quick_earned[i] + note_expected[i] * k) / (quick_count[i] + k);
         };
 
         cerr << "Exploit..." << endl;
         { // exploit
-            int i = max_element(ALL(expected)) - expected.begin();
-            if (i == numMachines or expected[i] < 1.1) {
+            int i = max_element(ALL(note_expected)) - note_expected.begin();
+            if (i == numMachines or note_expected[i] < 1.1) {
                 return;
             }
             cerr << "Selected Machine: " << i << endl;
@@ -162,8 +170,7 @@ public:
                     cerr << "Selected Machine: " << j << endl;
                     i = j;
                 }
-                quick_earned[i] += quickPlay(i, 1);
-                quick_count[i] += 1;
+                quickPlay(i, 1);
             }
             REP (i, numMachines) {
                 cerr << "Modified Expected payout rate: " << modified_expected(i) << endl;
