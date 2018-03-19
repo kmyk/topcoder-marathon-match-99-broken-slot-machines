@@ -119,6 +119,56 @@ public:
         return payout /(double) (size[0] * size[1] * size[2]);
     }
 
+    array<vector<string>, 3> split_to_chunks(vector<string> const & result) {
+        array<vector<string>, 3> chunks;
+        for (string s : result) {
+            REP (i, 3) {
+                chunks[i].emplace_back();
+            }
+            REP (j, 3 * 3) {
+                chunks[j % 3].back() += s[j];
+            }
+        }
+        return chunks;
+    }
+    string reconstruct_wheel1(vector<string> chunks) {
+        default_random_engine gen;
+        sort(ALL(chunks));
+        chunks.erase(unique(ALL(chunks)), chunks.end());
+        shuffle(ALL(chunks), gen);
+        string t = chunks.back();
+        chunks.pop_back();
+        while (not chunks.empty()) {
+            shuffle(ALL(chunks), gen);
+            REP (j, chunks.size()) {
+                if (t.substr(t.length() - 2) == chunks[j].substr(1)) {
+                    t += chunks[j][2];
+                    chunks.erase(chunks.begin() + j);
+                    goto next;
+                }
+            }
+            REP (j, chunks.size()) {
+                if (t[t.length() - 1] == chunks[j][0]) {
+                    t += chunks[j].substr(1);
+                    chunks.erase(chunks.begin() + j);
+                    goto next;
+                }
+            }
+            t += chunks.back();
+            chunks.pop_back();
+next: ;
+        }
+        return t;
+    }
+    vector<string> reconstruct_wheel(vector<string> const & result) {
+        auto chunks = split_to_chunks(result);
+        array<string, 3> wheel;
+        REP (i, 3) {
+            wheel[i] = reconstruct_wheel1(chunks[i]);
+        }
+        return vector<string>(ALL(wheel));
+    }
+
     void playSlots() {
         cerr << "Coins: " << coins << endl;
         cerr << "Remainig Time: " << maxTime << endl;
