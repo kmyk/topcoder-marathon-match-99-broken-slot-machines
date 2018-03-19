@@ -170,6 +170,35 @@ next: ;
     }
 
     void playSlots() {
+        if (noteTime >= 6) {
+            cerr << "Coins: " << coins << endl;
+            cerr << "Remainig Time: " << maxTime << endl;
+
+            auto modified_expected = [&](int i) {
+                int k = 20000;
+                return (quick_earned[i] + note_expected[i] * k) / (quick_count[i] + k);
+            };
+
+            REP (i, numMachines) {
+                cerr << "Machine " << i << "..." << endl;
+                cerr << "Explore..." << endl;
+                notePlay(i, 50 / noteTime);
+                cerr << "Expected payout rate: " << note_expected[i] << endl;
+                if (note_expected[i] < 1.0) continue;
+                notePlay(i, 50 / noteTime);
+                if (note_expected[i] < 1.3) continue;
+                notePlay(i, 50 / noteTime);
+                cerr << "Expected payout rate: " << note_expected[i] << endl;
+                cerr << "Exploit..." << endl;
+                while (coins and maxTime and modified_expected(i) > 1.3) {
+                    quickPlay(i, 1);
+                }
+                cerr << "Coins: " << coins << endl;
+                cerr << "Remainig Time: " << maxTime << endl;
+            }
+            return;
+        }
+
         cerr << "Coins: " << coins << endl;
         cerr << "Remainig Time: " << maxTime << endl;
 
