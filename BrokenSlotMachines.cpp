@@ -164,6 +164,11 @@ public:
             cerr << "Selected Machine: " << i << endl;
             vector<int> indices(numMachines);
             iota(ALL(indices), 0);
+#ifdef LOCAL
+            while (coins and maxTime) {
+                quickPlay(i, min(coins, maxTime));  // for speed
+            }
+#endif
             while (coins and maxTime) {
                 int j = *max_element(ALL(indices), [&](int i, int j) { return modified_expected(i) < modified_expected(j); });
                 if (j != i) {
@@ -198,6 +203,8 @@ int BrokenSlotMachines::playSlots(int coins, int maxTime, int noteTime, int numM
 
 #ifdef LOCAL
 int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
     int coins; cin >> coins;
     int maxTime; cin >> maxTime;
     int noteTime; cin >> noteTime;
