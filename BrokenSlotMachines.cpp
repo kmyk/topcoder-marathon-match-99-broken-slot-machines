@@ -63,6 +63,7 @@ public:
         note_result.resize(numMachines);
         note_count.resize(numMachines);
         note_expected.resize(numMachines, - INFINITY);
+        note_reconstucted.resize(numMachines, - INFINITY);
     }
 
     vector<int> quick_earned;
@@ -82,6 +83,7 @@ public:
     vector<vector<string> > note_result;
     vector<int> note_count;
     vector<double> note_expected;
+    vector<double> note_reconstucted;
     pair<int, vector<string> > notePlay(int machineNumber, int times) {
         coins -= times;
         maxTime -= noteTime * times;
@@ -94,6 +96,7 @@ public:
         copy(ALL(res), back_inserter(note_result[machineNumber]));
         note_count[machineNumber] += times;
         note_expected[machineNumber] = calc_expected(get_freq(note_result[machineNumber]));
+        note_reconstucted[machineNumber] = calc_reconstructed_expected(note_result[machineNumber]);
         return make_pair(win, res);
     }
 
@@ -131,8 +134,8 @@ public:
         }
         return chunks;
     }
-    string reconstruct_wheel1(vector<string> chunks) {
-        default_random_engine gen;
+    template <typename RandomEngine>
+    string reconstruct_wheel11(vector<string> chunks, RandomEngine & gen) {
         sort(ALL(chunks));
         chunks.erase(unique(ALL(chunks)), chunks.end());
         shuffle(ALL(chunks), gen);
@@ -141,8 +144,13 @@ public:
         while (not chunks.empty()) {
             shuffle(ALL(chunks), gen);
             REP (j, chunks.size()) {
-                if (t.substr(t.length() - 2) == chunks[j].substr(1)) {
+                if (t.substr(t.length() - 2) == chunks[j].substr(0, 2)) {
                     t += chunks[j][2];
+                    chunks.erase(chunks.begin() + j);
+                    goto next;
+                }
+                if (t.substr(0, 2) == chunks[j].substr(1)) {
+                    t = chunks[j][0] + t;
                     chunks.erase(chunks.begin() + j);
                     goto next;
                 }
@@ -153,6 +161,11 @@ public:
                     chunks.erase(chunks.begin() + j);
                     goto next;
                 }
+                if (t[0] == chunks[j][2]) {
+                    t = chunks[j].substr(0, 2) + t;
+                    chunks.erase(chunks.begin() + j);
+                    goto next;
+                }
             }
             t += chunks.back();
             chunks.pop_back();
@@ -160,13 +173,34 @@ next: ;
         }
         return t;
     }
-    vector<string> reconstruct_wheel(vector<string> const & result) {
+    string reconstruct_wheel1(vector<string> const & chunks) {
+        mt19937_64 gen;
+        string s;
+        REP (i, 10000) {
+            string t = reconstruct_wheel11(chunks, gen);
+            if (s.empty() or t.length() < s.length()) {
+                s = t;
+            }
+        }
+        return s;
+    }
+    array<string, 3> reconstruct_wheel(vector<string> const & result) {
         auto chunks = split_to_chunks(result);
         array<string, 3> wheel;
         REP (i, 3) {
             wheel[i] = reconstruct_wheel1(chunks[i]);
         }
-        return vector<string>(ALL(wheel));
+        return wheel;
+    }
+    double calc_reconstructed_expected(vector<string> const & result) {
+        auto wheel = reconstruct_wheel(result);
+        array<array<int, 7>, 3> freq = {};
+        REP (i, 3) {
+            REP (j, 7) {
+                freq[i][j] = count(ALL(wheel[i]), 'A' + j);
+            }
+        }
+        return calc_expected(freq);
     }
 
     void playSlots() {
@@ -176,7 +210,7 @@ next: ;
 
             auto modified_expected = [&](int i) {
                 int k = 20000;
-                return (quick_earned[i] + note_expected[i] * k) / (quick_count[i] + k);
+                return (quick_earned[i] + note_reconstucted[i] * k) / (quick_count[i] + k);
             };
 
             REP (i, numMachines) {
@@ -189,6 +223,7 @@ next: ;
                 if (note_expected[i] < 1.3) continue;
                 notePlay(i, 50 / noteTime);
                 cerr << "Expected payout rate: " << note_expected[i] << endl;
+                cerr << "                    : " << note_reconstucted[i] << endl;
                 cerr << "Exploit..." << endl;
                 while (coins and maxTime and modified_expected(i) > 1.3) {
                     quickPlay(i, 1);
@@ -204,8 +239,8 @@ next: ;
 
         cerr << "Explore..." << endl;
         { // explore
-            constexpr int first_depth = 10;
-            constexpr int second_depth = 5;
+            constexpr int first_depth = 15;
+            constexpr int second_depth = 0;
             const int first_k = min(numMachines, maxTime / noteTime / first_depth);
             const int second_k = min(3, first_k);
             if (maxTime - first_k * first_depth * noteTime <= 100) {
@@ -216,13 +251,14 @@ next: ;
             }
             vector<int> indices(numMachines);
             iota(ALL(indices), 0);
-            sort(ALL(indices), [&](int i, int j) { return note_expected[i] > note_expected[j]; });
+            sort(ALL(indices), [&](int i, int j) { return note_reconstucted[i] > note_reconstucted[j]; });
             REP (j, second_k) {
                 int i = indices[j];
                 notePlay(i, second_depth);
             }
             REP (i, numMachines) {
                 cerr << "Expected payout rate: " << note_expected[i] << endl;
+                cerr << "                    : " << note_reconstucted[i] << endl;
             }
         }
 
@@ -231,13 +267,13 @@ next: ;
 
         auto modified_expected = [&](int i) {
             int k = pow(3 * note_count[i], 3);
-            return (quick_earned[i] + note_expected[i] * k) / (quick_count[i] + k);
+            return (quick_earned[i] + note_reconstucted[i] * k) / (quick_count[i] + k);
         };
 
         cerr << "Exploit..." << endl;
         { // exploit
-            int i = max_element(ALL(note_expected)) - note_expected.begin();
-            if (i == numMachines or note_expected[i] < 1.1) {
+            int i = max_element(ALL(note_reconstucted)) - note_reconstucted.begin();
+            if (i == numMachines or note_reconstucted[i] < 1.1) {
                 return;
             }
             cerr << "Selected Machine: " << i << endl;
