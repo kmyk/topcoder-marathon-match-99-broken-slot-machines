@@ -69,6 +69,7 @@ public:
     vector<int> quick_earned;
     vector<int> quick_count;
     int quickPlay(int machineNumber, int times) {
+        if (times == 0) return 0;
         coins -= times;
         maxTime -= times;
         if (coins < 0) throw stop("bankrupted");
@@ -85,6 +86,7 @@ public:
     vector<double> note_expected;
     vector<double> note_reconstucted;
     pair<int, vector<string> > notePlay(int machineNumber, int times) {
+        if (times == 0) return make_pair(0, vector<string>());
         coins -= times;
         maxTime -= noteTime * times;
         if (coins < 0) throw stop("bankrupted");
