@@ -211,22 +211,11 @@ next: ;
 
         cerr << "Explore..." << endl;
         { // explore
-            constexpr int first_depth = 15;
-            constexpr int second_depth = 0;
-            const int first_k = min(numMachines, maxTime / noteTime / first_depth);
-            const int second_k = min(3, first_k);
-            if (maxTime - first_k * first_depth * noteTime <= 100) {
-                return;
-            }
-            REP (i, first_k) {
-                notePlay(i, first_depth);
-            }
-            vector<int> indices(numMachines);
-            iota(ALL(indices), 0);
-            sort(ALL(indices), [&](int i, int j) { return note_reconstucted[i] > note_reconstucted[j]; });
-            REP (j, second_k) {
-                int i = indices[j];
-                notePlay(i, second_depth);
+            constexpr int depth = 15;
+            int k = 0;
+            while (k + 1 <= numMachines and maxTime - (k + 1) * noteTime * depth >= 100) ++ k;
+            REP (i, k) {
+                notePlay(i, depth);
             }
             REP (i, numMachines) {
                 cerr << "Expected payout rate: " << note_expected[i] << endl;
